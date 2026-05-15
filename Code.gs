@@ -9,6 +9,7 @@ const CONFIG = {
   afterSalahMinutes: 15,
   checkWindowMinutes: 5,
   timeZone: 'Africa/Cairo',
+  notifyWhenPrayerTimesFetched: true,
 };
 
 const PRAYER_NAMES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
@@ -106,7 +107,36 @@ function getCachedPrayerData_(now) {
 
   properties.setProperty(CACHE_KEY, JSON.stringify(prayerData));
   Logger.log(`Prayer times fetched for today: ${today}`);
+  notifyPrayerTimesFetched_(prayerData);
   return prayerData;
+}
+
+function notifyPrayerTimesFetched_(prayerData) {
+  if (!CONFIG.notifyWhenPrayerTimesFetched) {
+    return;
+  }
+
+  try {
+    sendNotification_(
+      `Prayer times locked in for ${prayerData.date}`,
+      formatFetchedPrayerTimesMessage_(prayerData)
+    );
+  } catch (error) {
+    Logger.log(`Could not send prayer-times-fetched notification: ${error.message}`);
+  }
+}
+
+function formatFetchedPrayerTimesMessage_(prayerData) {
+  const lines = PRAYER_NAMES.map((name) => `${name}: ${prayerData.prayers[name]}`);
+
+  return [
+    'Fresh prayer times are loaded and the reminder engine is awake.',
+    '',
+    ...lines,
+    '',
+    `Reminders: ${CONFIG.reminderMinutes} minutes before each prayer`,
+    `After-salah zikr: ${CONFIG.afterSalahMinutes} minutes after each prayer`,
+  ].join('\n');
 }
 
 function fetchPrayerTimes_() {
@@ -293,6 +323,7 @@ function getConfigKey_() {
     CONFIG.timeZone,
     CONFIG.ntfyTopic,
     CONFIG.ntfyRelayUrl,
+    CONFIG.notifyWhenPrayerTimesFetched,
   ].join('|');
 }
 
