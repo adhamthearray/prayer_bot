@@ -4,19 +4,20 @@ A free Google Apps Script prayer reminder bot that sends ntfy notifications befo
 
 This version does not need Render, Railway, or an always-on Python server. Google Apps Script runs a time trigger every few minutes, checks whether a prayer event is due, and sends the notification.
 
-Google Apps Script may fail to reach `ntfy.sh` directly with `Address unavailable`. To avoid that, this project includes a tiny Cloudflare Worker relay. Apps Script calls the relay, and the relay publishes to ntfy.
+Google Apps Script may fail to reach `ntfy.sh` directly with `Address unavailable`. To avoid that, this project includes a tiny Vercel relay. Apps Script calls the relay, and the relay publishes to ntfy.
 
 ## Files
 
 - `Code.gs` - the Apps Script source code
 - `appsscript.json` - Apps Script project settings
-- `ntfy-relay-worker.js` - Cloudflare Worker relay for ntfy
+- `api/ntfy.js` - Vercel API relay for ntfy
+- `ntfy-relay-worker.js` - old Cloudflare Worker relay, kept as an alternate option
 
 ## Setup
 
 1. Install ntfy on your phone from <https://ntfy.sh>.
 2. Subscribe to a topic, for example `adham-prayer-bot`.
-3. Deploy the ntfy relay using `ntfy-relay-worker.js`.
+3. Deploy the ntfy relay to Vercel.
 4. Open <https://script.google.com>.
 5. Create a new project.
 6. Paste the contents of `Code.gs` into the Apps Script editor.
@@ -48,29 +49,29 @@ const CONFIG = {
 };
 ```
 
-## Deploy The Relay
+## Deploy The Relay On Vercel
 
-1. Go to <https://dash.cloudflare.com>.
-2. Open **Workers & Pages**.
-3. Create a Worker.
-4. Paste the contents of `ntfy-relay-worker.js`.
-5. Deploy it.
-6. Add these Worker variables:
+1. Go to <https://vercel.com>.
+2. Create a new project.
+3. Import this GitHub repo.
+4. Keep the default framework settings.
+5. Add these environment variables:
 
 ```text
 RELAY_TOKEN=make-a-long-random-secret
 NTFY_TOPIC=adham-prayer-bot
 ```
 
-7. Copy the Worker URL.
+6. Deploy.
+7. Copy the Vercel project URL and add `/api/ntfy`.
 8. In `Code.gs`, set:
 
 ```javascript
-ntfyRelayUrl: 'https://your-worker.your-subdomain.workers.dev',
+ntfyRelayUrl: 'https://your-project.vercel.app/api/ntfy',
 ntfyRelayToken: 'make-a-long-random-secret',
 ```
 
-The token in Apps Script must exactly match the Worker `RELAY_TOKEN`.
+The token in Apps Script must exactly match the Vercel `RELAY_TOKEN`.
 
 ## How Caching Works
 
