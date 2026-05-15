@@ -61,7 +61,13 @@ function checkPrayerReminders() {
 }
 
 function testNotification() {
-  sendNotification_('Prayer Bot Test', 'Your Google Apps Script prayer bot can send ntfy notifications.');
+  const response = sendNotification_(
+    'Prayer Bot Test',
+    'Your Google Apps Script prayer bot can send ntfy notifications.'
+  );
+
+  Logger.log(`ntfy response code: ${response.getResponseCode()}`);
+  Logger.log(response.getContentText());
 }
 
 function clearPrayerCache() {
@@ -165,15 +171,16 @@ function isEventDue_(event, now) {
 function sendNotification_(title, message) {
   const url = `https://ntfy.sh/${encodeURIComponent(CONFIG.ntfyTopic)}`;
 
-  UrlFetchApp.fetch(url, {
+  return UrlFetchApp.fetch(url, {
     method: 'post',
     payload: message,
+    contentType: 'text/plain; charset=utf-8',
     headers: {
       Title: title,
       Priority: 'default',
       Tags: 'pray',
     },
-    muteHttpExceptions: false,
+    muteHttpExceptions: true,
   });
 }
 
