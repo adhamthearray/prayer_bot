@@ -18,15 +18,21 @@ export default async function handler(request, response) {
     return response.status(400).json({ error: 'Missing topic or message' });
   }
 
+  const headers = {
+    Title: title,
+    Priority: 'default',
+    Tags: 'pray',
+    'Content-Type': 'text/plain; charset=utf-8',
+  };
+
+  if (process.env.NTFY_TOKEN) {
+    headers.Authorization = `Bearer ${process.env.NTFY_TOKEN}`;
+  }
+
   const ntfyResponse = await fetch(`https://ntfy.sh/${encodeURIComponent(topic)}`, {
     method: 'POST',
     body: message,
-    headers: {
-      Title: title,
-      Priority: 'default',
-      Tags: 'pray',
-      'Content-Type': 'text/plain; charset=utf-8',
-    },
+    headers,
   });
 
   const ntfyBody = await ntfyResponse.text();
