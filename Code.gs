@@ -169,9 +169,17 @@ function isEventDue_(event, now) {
 }
 
 function sendNotification_(title, message) {
-  const url = `https://ntfy.sh/${encodeURIComponent(CONFIG.ntfyTopic)}`;
+  try {
+    return sendNotificationToTopicUrl_(title, message);
+  } catch (topicError) {
+    Logger.log(`Topic URL publish failed: ${topicError.message}`);
+    Logger.log('Trying ntfy JSON publish fallback...');
+    return sendNotificationAsJson_(title, message);
+  }
+}
 
-  return UrlFetchApp.fetch(url, {
+function sendNotificationToTopicUrl_(title, message) {
+  return UrlFetchApp.fetch(`https://ntfy.sh/${encodeURIComponent(CONFIG.ntfyTopic)}`, {
     method: 'post',
     payload: message,
     contentType: 'text/plain; charset=utf-8',
@@ -180,6 +188,21 @@ function sendNotification_(title, message) {
       Priority: 'default',
       Tags: 'pray',
     },
+    muteHttpExceptions: true,
+  });
+}
+
+function sendNotificationAsJson_(title, message) {
+  return UrlFetchApp.fetch('https://ntfy.sh/', {
+    method: 'post',
+    payload: JSON.stringify({
+      topic: CONFIG.ntfyTopic,
+      title,
+      message,
+      priority: 'default',
+      tags: ['pray'],
+    }),
+    contentType: 'application/json; charset=utf-8',
     muteHttpExceptions: true,
   });
 }
