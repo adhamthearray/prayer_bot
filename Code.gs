@@ -1,5 +1,7 @@
 const CONFIG = {
   ntfyTopic: 'adham-prayer-bot',
+  ntfyRelayUrl: 'PASTE_RELAY_URL_HERE',
+  ntfyRelayToken: 'PASTE_RELAY_TOKEN_HERE',
   city: 'Cairo',
   country: 'Egypt',
   method: '5',
@@ -63,7 +65,7 @@ function checkPrayerReminders() {
 function testNotification() {
   const response = sendNotification_(
     'Prayer Bot Test',
-    'Your Google Apps Script prayer bot can send ntfy notifications.'
+    'Your Google Apps Script prayer bot can send ntfy notifications through the relay.'
   );
 
   Logger.log(`ntfy response code: ${response.getResponseCode()}`);
@@ -169,10 +171,44 @@ function isEventDue_(event, now) {
 }
 
 function sendNotification_(title, message) {
+  if (isNtfyRelayConfigured_()) {
+    return sendNotificationThroughRelay_(title, message);
+  }
+
+  Logger.log('ntfy relay is not configured. Trying direct ntfy publish.');
+  return sendDirectNtfyNotification_(title, message);
+}
+
+function sendNotificationThroughRelay_(title, message) {
+  return UrlFetchApp.fetch(CONFIG.ntfyRelayUrl, {
+    method: 'post',
+    payload: JSON.stringify({
+      topic: CONFIG.ntfyTopic,
+      title,
+      message,
+    }),
+    headers: {
+      Authorization: `Bearer ${CONFIG.ntfyRelayToken}`,
+    },
+    contentType: 'application/json; charset=utf-8',
+    muteHttpExceptions: true,
+  });
+}
+
+function isNtfyRelayConfigured_() {
+  return Boolean(
+    CONFIG.ntfyRelayUrl &&
+      CONFIG.ntfyRelayUrl !== 'PASTE_RELAY_URL_HERE' &&
+      CONFIG.ntfyRelayToken &&
+      CONFIG.ntfyRelayToken !== 'PASTE_RELAY_TOKEN_HERE'
+  );
+}
+
+function sendDirectNtfyNotification_(title, message) {
   try {
     return sendNotificationToTopicUrl_(title, message);
   } catch (topicError) {
-    Logger.log(`Topic URL publish failed: ${topicError.message}`);
+    Logger.log(`ntfy topic URL publish failed: ${topicError.message}`);
     Logger.log('Trying ntfy JSON publish fallback...');
     return sendNotificationAsJson_(title, message);
   }
@@ -255,6 +291,8 @@ function getConfigKey_() {
     CONFIG.reminderMinutes,
     CONFIG.afterSalahMinutes,
     CONFIG.timeZone,
+    CONFIG.ntfyTopic,
+    CONFIG.ntfyRelayUrl,
   ].join('|');
 }
 
